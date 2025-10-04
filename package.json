@@ -1,11 +1,14 @@
 {
-  "name": "task-2",
+  "name": "e-commerce-backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js"
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "nodemon": "^3.1.10"
+  }
 }
