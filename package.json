@@ -1,14 +1,25 @@
 {
   "name": "e-commerce-backend",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "start": "node index.js",
+    "start:api": "node api/index.js",
+    "dev": "nodemon index.js",
+    "migrate:supabase": "node create_tables_supabase.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "nodemon": "^3.1.10"
+    "@supabase/supabase-js": "^2.58.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.0",
+    "nodemon": "^3.1.10",
+    "pg": "^8.16.3",
+    "uuid": "^8.3.2"
   }
 }
