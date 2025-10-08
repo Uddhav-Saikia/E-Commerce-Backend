@@ -1,48 +1,37 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { createClient } from "@supabase/supabase-js";
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const productRoutes = require('./routes/productRoutes');
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Supabase client
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+// Connect to MongoDB
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce';
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('\u2705 Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// ✅ Dynamic GET all rows from any table
-app.get("/api/:table", async (req, res) => {
-  const { table } = req.params;
-  const { data, error } = await supabase.from(table).select("*");
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
+// API routes
+app.use('/api/products', productRoutes);
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/roles', require('./routes/roleRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/coupons', require('./routes/couponRoutes'));
+app.use('/api/product-categories', require('./routes/productCategoryRoutes'));
+app.use('/api/product-tags', require('./routes/productTagRoutes'));
+app.use('/api/product-statuses', require('./routes/productStatusRoutes'));
+app.use('/api/tags', require('./routes/tagRoutes'));
+app.use('/api/sales-orders', require('./routes/salesOrderRoutes'));
+app.use('/api/order-products', require('./routes/orderProductRoutes'));
+app.use('/api/transactions', require('./routes/transactionRoutes'));
+app.use('/api/sessions', require('./routes/sessionRoutes'));
 
-// ✅ Dynamic POST insert into any table
-app.post("/api/:table", async (req, res) => {
-  const { table } = req.params;
-  const newRecord = req.body;
-  const { data, error } = await supabase.from(table).insert([newRecord]);
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
-
-// (Optional) GET a single row by ID (if table has "id" or primary key)
-app.get("/api/:table/:id", async (req, res) => {
-  const { table, id } = req.params;
-  const { data, error } = await supabase.from(table).select("*").eq("id", id).single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
-
-// (Optional) DELETE by ID
-app.delete("/api/:table/:id", async (req, res) => {
-  const { table, id } = req.params;
-  const { data, error } = await supabase.from(table).delete().eq("id", id);
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
+// Simple root
+app.get('/', (req, res) => res.send('E-Commerce Backend API'));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`\u2705 Server running at http://localhost:${PORT}`));

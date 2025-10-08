@@ -12,75 +12,132 @@
   </style>
 </head>
 <body>
-  <h1>Supabase Table Tester</h1>
+  <h1>API Tester</h1>
 
-  <label for="tableSelect">Choose a table:</label>
-  <select id="tableSelect" onchange="loadTable()">
+  <label for="resourceSelect">Choose resource:</label>
+  <select id="resourceSelect" onchange="onResourceChange()">
     <option value="products">products</option>
     <option value="users">users</option>
+    <option value="roles">roles</option>
     <option value="categories">categories</option>
     <option value="coupons">coupons</option>
-    <option value="sales_orders">salesorders</option>
+    <option value="product-categories">product-categories</option>
+    <option value="product-tags">product-tags</option>
+    <option value="product-statuses">product-statuses</option>
+    <option value="tags">tags</option>
+    <option value="sales-orders">sales-orders</option>
+    <option value="order-products">order-products</option>
     <option value="transactions">transactions</option>
+    <option value="sessions">sessions</option>
   </select>
 
-  <button onclick="loadTable()">Load Records</button>
+  <div style="margin-top:10px">
+    <button onclick="list()">List</button>
+    <input id="getId" placeholder="id for GET/PUT/DELETE" style="width:320px" />
+    <button onclick="getById()">GET</button>
+    <button onclick="delById()">DELETE</button>
+  </div>
 
   <h2>Records</h2>
   <div id="records"></div>
 
-  <h2>Add Record</h2>
-  <p>Enter JSON for the new row:</p>
-  <textarea id="recordInput">{ "name": "Sample Product", "sku": "ABC123", "regular_price": 100 }</textarea><br>
-  <button onclick="addRecord()">Add</button>
+  <h2>Create / Update</h2>
+  <p>JSON payload:</p>
+  <textarea id="payload" placeholder='{"name":"..."}'></textarea><br>
+  <button onclick="create()">Create</button>
+  <button onclick="update()">Update (uses id field above)</button>
 
   <h2>Response</h2>
   <pre id="output"></pre>
 
   <script>
-    const API_URL = "http://localhost:5000/api"; // backend
+    const API_URL = "http://localhost:5000/api";
 
-    async function loadTable() {
-      const table = document.getElementById("tableSelect").value;
-      const res = await fetch(`${API_URL}/${table}`);
+    const demoPayloads = {
+      products: { sku: 'DEMO-001', name: 'Demo Product', regular_price: 49.99, quantity: 10 },
+      users: { email: 'demo@example.com', first_name: 'Demo', last_name: 'User' },
+      roles: { name: 'customer' },
+      categories: { name: 'General' },
+      coupons: { code: 'DISC10', description: '10% off', value: 10 },
+      'product-categories': { product_id: null, category_id: null },
+      'product-tags': { product_id: null, tag_id: null },
+      'product-statuses': { name: 'active' },
+      tags: { name: 'new' },
+      'sales-orders': { total: 0, session_id: 'sess-demo', user_id: null },
+      'order-products': { order_id: null, sku: 'DEMO-001', name: 'Demo Product', price: 10, quantity: 1, subtotal: 10 },
+      transactions: { code: 'T1', amount: 0, processor: 'test' },
+      sessions: { has: 'session-demo' }
+    };
+
+    function resourcePath() {
+      return document.getElementById('resourceSelect').value;
+    }
+
+    function onResourceChange() {
+      const r = resourcePath();
+      const payload = demoPayloads[r] || {};
+      document.getElementById('payload').value = JSON.stringify(payload, null, 2);
+      document.getElementById('output').textContent = '';
+      document.getElementById('records').innerHTML = '';
+    }
+
+    async function list() {
+      const r = resourcePath();
+      const res = await fetch(`${API_URL}/${r}`);
       const data = await res.json();
-      const container = document.getElementById("records");
-      container.innerHTML = "";
-
-      if (data.length === 0) {
-        container.textContent = "No records found.";
-        return;
-      }
-
-      data.forEach(row => {
-        const div = document.createElement("div");
-        div.className = "record";
-        div.textContent = JSON.stringify(row);
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+      const container = document.getElementById('records');
+      container.innerHTML = '';
+      if (!Array.isArray(data) || data.length === 0) { container.textContent = 'No records.'; return; }
+      data.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'record';
+        div.textContent = JSON.stringify(d);
         container.appendChild(div);
       });
     }
 
-    async function addRecord() {
-      const table = document.getElementById("tableSelect").value;
-      let record;
-
-      try {
-        record = JSON.parse(document.getElementById("recordInput").value);
-      } catch (err) {
-        alert("Invalid JSON");
-        return;
-      }
-
-      const res = await fetch(`${API_URL}/${table}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(record),
-      });
-
+    async function create() {
+      const r = resourcePath();
+      let body;
+      try { body = JSON.parse(document.getElementById('payload').value); } catch (e) { alert('Invalid JSON'); return; }
+      const res = await fetch(`${API_URL}/${r}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-      loadTable(); // refresh
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
     }
+
+    async function getById() {
+      const r = resourcePath();
+      const id = document.getElementById('getId').value.trim();
+      if (!id) return alert('Enter id');
+      const res = await fetch(`${API_URL}/${r}/${id}`);
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function update() {
+      const r = resourcePath();
+      const id = document.getElementById('getId').value.trim();
+      if (!id) return alert('Enter id');
+      let body;
+      try { body = JSON.parse(document.getElementById('payload').value); } catch (e) { alert('Invalid JSON'); return; }
+      const res = await fetch(`${API_URL}/${r}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function delById() {
+      const r = resourcePath();
+      const id = document.getElementById('getId').value.trim();
+      if (!id) return alert('Enter id');
+      if (!confirm('Delete ' + id + ' from ' + r + '?')) return;
+      const res = await fetch(`${API_URL}/${r}/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    // initialize
+    onResourceChange();
   </script>
 </body>
 </html>
